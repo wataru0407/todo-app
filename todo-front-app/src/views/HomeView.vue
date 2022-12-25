@@ -1,96 +1,222 @@
 <template>
-  <div>
-    <!-- task追加用のテキストボックス -->
-    <v-text-field
-      v-model="newTaskTitle"
-      class="mt-3 ml-3"
-      label="Add Task"
-      @keyup.enter="addTask"
-      clearable
-      hide-details
-      counter
-      maxlength="20"
-      prepend-icon="mdi-plus"
-    ></v-text-field>
-    <v-list>
-      <!-- divでtasksをループで出力する。templateは使えない。 -->
-      <div v-for="task in tasks" :key="task.id">
-        <!-- クリックしたら、背景色を変更し、tasksを更新するイベントを追加 -->
-        <v-list-item @click="doneTask(task.id)" :class="{ 'blue lighten-5': task.done }">
-          <template>
-            <!-- タイトル、チェックボックスをtasksと連動させる -->
-            <v-list-item-action>
-              <v-checkbox :input-value="task.done"></v-checkbox>
-            </v-list-item-action>
-
-            <v-list-item-content>
-              <!-- タスクが完了したら取り消し線にする。 -->
-              <v-list-item-title :class="{ 'text-decoration-line-through': task.done }">{{
-                task.title
-              }}</v-list-item-title>
-            </v-list-item-content>
-
-            <!-- deleteアイコンに変更し、tasksを削除するイベント追加 -->
-            <v-list-item-icon>
-              <v-icon color="primary" @click="deleteTask(task.id)"> mdi-delete </v-icon>
-            </v-list-item-icon>
+  <v-data-table
+    :headers="headers"
+    :items="tasks"
+    sort-by="calories"
+    class="elevation-1"
+  >
+    <template #top>
+      <v-toolbar flat>
+        <v-toolbar-title>My CRUD</v-toolbar-title>
+        <v-divider class="mx-4" inset vertical></v-divider>
+        <v-spacer></v-spacer>
+        <v-dialog v-model="dialog" max-width="500px">
+          <template #activator="{ on, attrs }">
+            <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
+              New Item
+            </v-btn>
           </template>
-        </v-list-item>
-        <v-divider></v-divider>
-      </div>
-    </v-list>
-  </div>
+          <v-card>
+            <v-card-title>
+              <span class="text-h5">{{ formTitle }}</span>
+            </v-card-title>
+
+            <v-card-text>
+              <v-container>
+                <v-text-field
+                  v-model="editedItem.title"
+                  label="Title"
+                ></v-text-field>
+              </v-container>
+            </v-card-text>
+
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
+              <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+        <v-dialog v-model="dialogDelete" max-width="500px">
+          <v-card>
+            <v-card-title class="text-h5"
+              >Are you sure you want to delete this item?</v-card-title
+            >
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="closeDelete"
+                >Cancel</v-btn
+              >
+              <v-btn color="blue darken-1" text @click="deleteItemConfirm"
+                >OK</v-btn
+              >
+              <v-spacer></v-spacer>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </v-toolbar>
+    </template>
+    <template #[`item.actions`]="{ item }">
+      <v-icon small class="mr-2" @click="editItem(item.id)">
+        mdi-pencil
+      </v-icon>
+      <v-icon small @click="deleteItem(item.id)"> mdi-delete </v-icon>
+    </template>
+  </v-data-table>
 </template>
 
-<script lang="ts">
-import Vue from "vue";
+<script>
+import axios from "axios";
 
-export default Vue.extend({
-  name: "Home",
-  // tasksを追加
-  data: () => ({
-    newTaskTitle: "",
-    tasks: [
-      {
-        id: 1,
-        title: "起きる",
-        done: false,
+export default {
+  data() {
+    return {
+      dialog: false,
+      dialogDelete: false,
+      headers: [
+        { text: "ID", value: "id", align: "start", sortable: false },
+        { text: "Title", value: "title", sortable: false },
+        { text: "Actions", value: "actions", align: "end", sortable: false },
+      ],
+      tasks: [],
+      // editedIndex: -1,
+      editedItem: {
+        id: -1,
+        title: "",
       },
-      {
-        id: 2,
-        title: "着替える",
-        done: false,
+      defaultItem: {
+        id: -1,
+        title: "",
       },
-    ],
-  }),
-  methods: {
-    // taskを検索し、フラグを更新する。
-    doneTask(id: number) {
-      let task = this.tasks.find((t) => t.id === id);
-      if (task !== undefined) {
-        task.done = !task.done;
-      }
-    },
-    // taskを削除する。
-    deleteTask(id: number) {
-      this.tasks.forEach((task, index) => {
-        if (task.id == id) this.tasks.splice(index, 1);
-      });
-      // 以下の書き方もできるが、部品化すると更新できなくなるので却下
-      // this.tasks = this.tasks.filter((t) => t.id !== id);
-    },
-    // taskを追加する。
-    addTask() {
-      if (this.newTaskTitle.length > 0) {
-        let newTask = {
-          id: Date.now(),
-          title: this.newTaskTitle,
-          done: false,
-        };
-        this.tasks.push(newTask);
-        this.newTaskTitle = "";
-      }
+      deletedItemId: -1,
+    };
+  },
+
+  computed: {
+    formTitle() {
+      return this.editedItem.id === -1 ? "New Item" : "Edit Item";
     },
   },
-});
+
+  watch: {
+    dialog(val) {
+      val || this.close();
+    },
+    dialogDelete(val) {
+      val || this.closeDelete();
+    },
+  },
+
+  created() {
+    this.initialize();
+  },
+
+  methods: {
+    initialize() {
+      axios
+        .get("/tasks/")
+        .then((response) => {
+          this.tasks = response.data.results;
+          console.log(this.tasks);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    createItem(task) {
+      axios
+        .post("/tasks/", task)
+        .then((response) => {
+          console.log(response.data);
+          this.initialize();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    editItem(id) {
+      // this.editedIndex = this.tasks.indexOf(item);
+      // this.editedItem = Object.assign({}, item);
+      // this.dialog = true;
+      axios
+        .get("/tasks/" + id)
+        .then((response) => {
+          this.editedItem = response.data;
+          console.log(this.editedItem);
+          this.dialog = true;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    updateItem(task) {
+      axios
+        .put("/tasks/" + task.id, task)
+        .then((response) => {
+          console.log(response.data);
+          this.initialize();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    deleteItem(id) {
+      //this.editedIndex = this.tasks.indexOf(item);
+      //this.editedItem = Object.assign({}, item);
+      this.deletedItemId = id;
+      this.dialogDelete = true;
+    },
+
+    deleteItemConfirm() {
+      //this.tasks.splice(this.editedIndex, 1);
+      axios
+        .delete("/tasks/" + this.deletedItemId)
+        .then(() => {
+          this.initialize();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+      this.closeDelete();
+    },
+
+    close() {
+      this.dialog = false;
+      // this.deleteDialog = false;
+      this.$nextTick(() => {
+        // this.editedItem = Object.assign({}, this.defaultItem);
+        // this.editedIndex = -1;
+        this.editedItem = Object.assign({}, this.defaultItem);
+      });
+    },
+
+    closeDelete() {
+      this.dialogDelete = false;
+      this.$nextTick(() => {
+        // this.editedItem = Object.assign({}, this.defaultItem);
+        // this.editedIndex = -1;
+        this.editedItem = Object.assign({}, this.defaultItem);
+      });
+    },
+
+    save() {
+      // if (this.editedIndex > -1) {
+      //   Object.assign(this.tasks[this.editedIndex], this.editedItem);
+      // } else {
+      //   this.tasks.push(this.editedItem);
+      // }
+      this.close();
+      if (this.editedItem.id === -1) {
+        this.createItem(this.editedItem);
+      } else {
+        this.updateItem(this.editedItem);
+      }
+      this.close();
+    },
+  },
+};
 </script>
