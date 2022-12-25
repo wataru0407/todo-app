@@ -208,6 +208,7 @@ export default Vue.extend({
         // this.editedItem = Object.assign({}, this.defaultItem);
         // this.editedIndex = -1;
         this.editedItem = Object.assign({}, this.defaultItem);
+        this.deletedItemId = -1;
       });
     },
 
