@@ -65,10 +65,12 @@
   </v-data-table>
 </template>
 
-<script>
+<script lang="ts">
 import axios from "axios";
+import Vue from "vue";
+import { Task, TaskForm } from "@/@types/task";
 
-export default {
+export default Vue.extend({
   data() {
     return {
       dialog: false,
@@ -78,22 +80,22 @@ export default {
         { text: "Title", value: "title", sortable: false },
         { text: "Actions", value: "actions", align: "end", sortable: false },
       ],
-      tasks: [],
+      tasks: [] as Task[],
       // editedIndex: -1,
       editedItem: {
         id: -1,
         title: "",
-      },
+      } as Task,
       defaultItem: {
         id: -1,
         title: "",
-      },
+      } as Task,
       deletedItemId: -1,
     };
   },
 
   computed: {
-    formTitle() {
+    formTitle(): string {
       return this.editedItem.id === -1 ? "New Item" : "Edit Item";
     },
   },
@@ -112,7 +114,7 @@ export default {
   },
 
   methods: {
-    initialize() {
+    initialize(): void {
       axios
         .get("/tasks/")
         .then((response) => {
@@ -124,9 +126,12 @@ export default {
         });
     },
 
-    createItem(task) {
+    createItem(task: Task): void {
+      const taskForm: TaskForm = {
+        title: task.title,
+      };
       axios
-        .post("/tasks/", task)
+        .post("/tasks/", taskForm)
         .then((response) => {
           console.log(response.data);
           this.initialize();
@@ -136,7 +141,7 @@ export default {
         });
     },
 
-    editItem(id) {
+    editItem(id: number): void {
       // this.editedIndex = this.tasks.indexOf(item);
       // this.editedItem = Object.assign({}, item);
       // this.dialog = true;
@@ -152,9 +157,12 @@ export default {
         });
     },
 
-    updateItem(task) {
+    updateItem(task: Task): void {
+      const taskForm: TaskForm = {
+        title: task.title,
+      };
       axios
-        .put("/tasks/" + task.id, task)
+        .put("/tasks/" + task.id, taskForm)
         .then((response) => {
           console.log(response.data);
           this.initialize();
@@ -164,14 +172,14 @@ export default {
         });
     },
 
-    deleteItem(id) {
+    deleteItem(id: number): void {
       //this.editedIndex = this.tasks.indexOf(item);
       //this.editedItem = Object.assign({}, item);
       this.deletedItemId = id;
       this.dialogDelete = true;
     },
 
-    deleteItemConfirm() {
+    deleteItemConfirm(): void {
       //this.tasks.splice(this.editedIndex, 1);
       axios
         .delete("/tasks/" + this.deletedItemId)
@@ -184,7 +192,7 @@ export default {
       this.closeDelete();
     },
 
-    close() {
+    close(): void {
       this.dialog = false;
       // this.deleteDialog = false;
       this.$nextTick(() => {
@@ -194,7 +202,7 @@ export default {
       });
     },
 
-    closeDelete() {
+    closeDelete(): void {
       this.dialogDelete = false;
       this.$nextTick(() => {
         // this.editedItem = Object.assign({}, this.defaultItem);
@@ -203,13 +211,13 @@ export default {
       });
     },
 
-    save() {
+    save(): void {
       // if (this.editedIndex > -1) {
       //   Object.assign(this.tasks[this.editedIndex], this.editedItem);
       // } else {
       //   this.tasks.push(this.editedItem);
       // }
-      this.close();
+      // this.close();
       if (this.editedItem.id === -1) {
         this.createItem(this.editedItem);
       } else {
@@ -218,5 +226,5 @@ export default {
       this.close();
     },
   },
-};
+});
 </script>
