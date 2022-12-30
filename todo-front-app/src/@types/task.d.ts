@@ -3,6 +3,6 @@ export type Task = {
   title: string
 };
 
-type TaskForm = {
+export type TaskForm = {
   title: string
 }
