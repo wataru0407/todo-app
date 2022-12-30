@@ -66,9 +66,10 @@
 </template>
 
 <script lang="ts">
-import axios from "axios";
+// import axios from "axios";
 import Vue from "vue";
 import { Task, TaskForm } from "@/@types/task";
+import { TaskService } from "@/services/TaskService";
 
 export default Vue.extend({
   data() {
@@ -114,62 +115,69 @@ export default Vue.extend({
   },
 
   methods: {
-    initialize(): void {
-      axios
-        .get("/tasks/")
-        .then((response) => {
-          this.tasks = response.data.results;
-          console.log(this.tasks);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+    async initialize(): Promise<void> {
+      this.tasks = await TaskService.getAll();
+      // axios
+      //   .get("/tasks/")
+      //   .then((response) => {
+      //     this.tasks = response.data.results;
+      //     console.log(this.tasks);
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //   });
     },
 
-    createItem(task: Task): void {
+    async createItem(task: Task): Promise<void> {
       const taskForm: TaskForm = {
         title: task.title,
       };
-      axios
-        .post("/tasks/", taskForm)
-        .then((response) => {
-          console.log(response.data);
-          this.initialize();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      await TaskService.create(taskForm);
+      await this.initialize();
+      // axios
+      //   .post("/tasks/", taskForm)
+      //   .then((response) => {
+      //     console.log(response.data);
+      //     this.initialize();
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //   });
     },
 
-    editItem(id: number): void {
+    async editItem(id: number): Promise<void> {
+      this.editedItem = await TaskService.get(id);
+      this.dialog = true;
       // this.editedIndex = this.tasks.indexOf(item);
       // this.editedItem = Object.assign({}, item);
       // this.dialog = true;
-      axios
-        .get("/tasks/" + id)
-        .then((response) => {
-          this.editedItem = response.data;
-          console.log(this.editedItem);
-          this.dialog = true;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      // axios
+      //   .get("/tasks/" + id)
+      //   .then((response) => {
+      //     this.editedItem = response.data;
+      //     console.log(this.editedItem);
+      //     this.dialog = true;
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //   });
     },
 
-    updateItem(task: Task): void {
+    async updateItem(task: Task): Promise<void> {
       const taskForm: TaskForm = {
         title: task.title,
       };
-      axios
-        .put("/tasks/" + task.id, taskForm)
-        .then((response) => {
-          console.log(response.data);
-          this.initialize();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      await TaskService.update(task.id, taskForm);
+      await this, this.initialize();
+      // axios
+      //   .put("/tasks/" + task.id, taskForm)
+      //   .then((response) => {
+      //     console.log(response.data);
+      //     this.initialize();
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //   });
     },
 
     deleteItem(id: number): void {
@@ -179,16 +187,18 @@ export default Vue.extend({
       this.dialogDelete = true;
     },
 
-    deleteItemConfirm(): void {
+    async deleteItemConfirm(): Promise<void> {
       //this.tasks.splice(this.editedIndex, 1);
-      axios
-        .delete("/tasks/" + this.deletedItemId)
-        .then(() => {
-          this.initialize();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      await TaskService.delete(this.deletedItemId);
+      await this.initialize();
+      // axios
+      //   .delete("/tasks/" + this.deletedItemId)
+      //   .then(() => {
+      //     this.initialize();
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //   });
       this.closeDelete();
     },
 
@@ -212,7 +222,7 @@ export default Vue.extend({
       });
     },
 
-    save(): void {
+    async save(): Promise<void> {
       // if (this.editedIndex > -1) {
       //   Object.assign(this.tasks[this.editedIndex], this.editedItem);
       // } else {
@@ -220,9 +230,9 @@ export default Vue.extend({
       // }
       // this.close();
       if (this.editedItem.id === -1) {
-        this.createItem(this.editedItem);
+        await this.createItem(this.editedItem);
       } else {
-        this.updateItem(this.editedItem);
+        await this.updateItem(this.editedItem);
       }
       this.close();
     },
