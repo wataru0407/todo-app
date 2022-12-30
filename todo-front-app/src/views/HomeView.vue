@@ -82,7 +82,6 @@ export default Vue.extend({
         { text: "Actions", value: "actions", align: "end", sortable: false },
       ],
       tasks: [] as Task[],
-      // editedIndex: -1,
       editedItem: {
         id: -1,
         title: "",
@@ -117,15 +116,6 @@ export default Vue.extend({
   methods: {
     async initialize(): Promise<void> {
       this.tasks = await TaskService.getAll();
-      // axios
-      //   .get("/tasks/")
-      //   .then((response) => {
-      //     this.tasks = response.data.results;
-      //     console.log(this.tasks);
-      //   })
-      //   .catch((error) => {
-      //     console.log(error);
-      //   });
     },
 
     async createItem(task: Task): Promise<void> {
@@ -134,33 +124,11 @@ export default Vue.extend({
       };
       await TaskService.create(taskForm);
       await this.initialize();
-      // axios
-      //   .post("/tasks/", taskForm)
-      //   .then((response) => {
-      //     console.log(response.data);
-      //     this.initialize();
-      //   })
-      //   .catch((error) => {
-      //     console.log(error);
-      //   });
     },
 
     async editItem(id: number): Promise<void> {
       this.editedItem = await TaskService.get(id);
       this.dialog = true;
-      // this.editedIndex = this.tasks.indexOf(item);
-      // this.editedItem = Object.assign({}, item);
-      // this.dialog = true;
-      // axios
-      //   .get("/tasks/" + id)
-      //   .then((response) => {
-      //     this.editedItem = response.data;
-      //     console.log(this.editedItem);
-      //     this.dialog = true;
-      //   })
-      //   .catch((error) => {
-      //     console.log(error);
-      //   });
     },
 
     async updateItem(task: Task): Promise<void> {
@@ -168,46 +136,23 @@ export default Vue.extend({
         title: task.title,
       };
       await TaskService.update(task.id, taskForm);
-      await this, this.initialize();
-      // axios
-      //   .put("/tasks/" + task.id, taskForm)
-      //   .then((response) => {
-      //     console.log(response.data);
-      //     this.initialize();
-      //   })
-      //   .catch((error) => {
-      //     console.log(error);
-      //   });
+      await this.initialize();
     },
 
     deleteItem(id: number): void {
-      //this.editedIndex = this.tasks.indexOf(item);
-      //this.editedItem = Object.assign({}, item);
       this.deletedItemId = id;
       this.dialogDelete = true;
     },
 
     async deleteItemConfirm(): Promise<void> {
-      //this.tasks.splice(this.editedIndex, 1);
       await TaskService.delete(this.deletedItemId);
       await this.initialize();
-      // axios
-      //   .delete("/tasks/" + this.deletedItemId)
-      //   .then(() => {
-      //     this.initialize();
-      //   })
-      //   .catch((error) => {
-      //     console.log(error);
-      //   });
       this.closeDelete();
     },
 
     close(): void {
       this.dialog = false;
-      // this.deleteDialog = false;
       this.$nextTick(() => {
-        // this.editedItem = Object.assign({}, this.defaultItem);
-        // this.editedIndex = -1;
         this.editedItem = Object.assign({}, this.defaultItem);
       });
     },
@@ -215,20 +160,12 @@ export default Vue.extend({
     closeDelete(): void {
       this.dialogDelete = false;
       this.$nextTick(() => {
-        // this.editedItem = Object.assign({}, this.defaultItem);
-        // this.editedIndex = -1;
         this.editedItem = Object.assign({}, this.defaultItem);
         this.deletedItemId = -1;
       });
     },
 
     async save(): Promise<void> {
-      // if (this.editedIndex > -1) {
-      //   Object.assign(this.tasks[this.editedIndex], this.editedItem);
-      // } else {
-      //   this.tasks.push(this.editedItem);
-      // }
-      // this.close();
       if (this.editedItem.id === -1) {
         await this.createItem(this.editedItem);
       } else {
